@@ -1,5 +1,6 @@
 import { Home, Calendar, FileText, Mic, LogOut, Menu } from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +10,7 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/" },
@@ -16,6 +18,11 @@ export function Sidebar({ className }: SidebarProps) {
     { icon: FileText, label: "Summarize", href: "/summarize" },
     { icon: Mic, label: "Voice to Text", href: "/voice" },
   ];
+
+  const handleLogout = () => {
+    // Add logout logic here
+    navigate("/");
+  };
 
   return (
     <div
@@ -41,19 +48,22 @@ export function Sidebar({ className }: SidebarProps) {
 
       <nav className="flex-1 p-2 space-y-1">
         {menuItems.map((item) => (
-          <a
+          <Link
             key={item.href}
-            href={item.href}
+            to={item.href}
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
           >
             <item.icon className="h-5 w-5" />
             {!collapsed && <span>{item.label}</span>}
-          </a>
+          </Link>
         ))}
       </nav>
 
       <div className="p-2 border-t">
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+        >
           <LogOut className="h-5 w-5" />
           {!collapsed && <span>Logout</span>}
         </button>

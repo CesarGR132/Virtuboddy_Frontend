@@ -5,18 +5,24 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import Index from "./pages/Index";
+import Calendar from "./pages/Calendar";
+import Summarize from "./pages/Summarize";
+import VoiceToText from "./pages/VoiceToText";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="app-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="app-theme">
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/summarize" element={<Summarize />} />
+            <Route path="/voice" element={<VoiceToText />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
