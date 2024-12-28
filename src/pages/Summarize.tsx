@@ -3,11 +3,14 @@ import { Sidebar } from "@/components/Sidebar";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Wand2 } from "lucide-react";
 
 const Summarize = () => {
   const [text, setText] = useState("");
+
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -37,6 +40,9 @@ const Summarize = () => {
                     <div className="flex h-full flex-col">
                       <div className="flex items-center justify-between p-4 border-b">
                         <h3 className="font-medium">Input Text</h3>
+                        <span className="text-sm text-muted-foreground">
+                          Words: {wordCount}
+                        </span>
                       </div>
                       <Textarea
                         value={text}
@@ -53,6 +59,10 @@ const Summarize = () => {
                     <div className="flex h-full flex-col">
                       <div className="flex items-center justify-between p-4 border-b">
                         <h3 className="font-medium">Summary</h3>
+                        <Button size="sm" className="gap-2">
+                          <Wand2 className="h-4 w-4" />
+                          Summarize
+                        </Button>
                       </div>
                       <div className="flex-1 p-4 bg-muted/50">
                         <p className="text-muted-foreground">
