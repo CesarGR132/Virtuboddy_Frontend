@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
