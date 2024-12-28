@@ -20,29 +20,31 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <div
       className={cn(
-        "relative flex flex-col h-screen bg-background border-r transition-all duration-300",
+        "relative flex flex-col h-screen bg-background transition-all duration-300",
         collapsed ? "w-16" : "w-64",
         className
       )}
     >
-      <div className="p-4 flex justify-between items-center">
-        {!collapsed && <span className="text-xl font-bold">Dashboard</span>}
+      <div className="p-4 flex justify-between items-center border-b">
+        {!collapsed && (
+          <span className="text-xl font-semibold text-primary">Dashboard</span>
+        )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto"
+          className="ml-auto hover:bg-accent/50"
         >
           <Menu className="h-5 w-5" />
         </Button>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-2 space-y-1">
         {menuItems.map((item) => (
           <a
             key={item.href}
             href={item.href}
-            className="sidebar-item"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
           >
             <item.icon className="h-5 w-5" />
             {!collapsed && <span>{item.label}</span>}
@@ -50,8 +52,8 @@ export function Sidebar({ className }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="p-4 border-t">
-        <button className="sidebar-item w-full text-red-500 hover:text-red-600 dark:text-red-400">
+      <div className="p-2 border-t">
+        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors">
           <LogOut className="h-5 w-5" />
           {!collapsed && <span>Logout</span>}
         </button>
