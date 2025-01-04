@@ -1,16 +1,58 @@
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { Sparkles, Wand2 } from "lucide-react";
+import { set } from "date-fns";
 
 const Summarize = () => {
   const [text, setText] = useState("");
+  const [summarizedText, setSummarizedText] = useState("");
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false);
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+
+  const summarizeButton = document.getElementById('trigger-summarize');
+  const summarizedTextElement = document.getElementById('summarized-text');
+  
+  const  handleSummarize = async () => {
+    const textToSummarize = text;
+
+    if (textToSummarize) {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:3000/summarize", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: textToSummarize
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          summarizedTextElement.innerText = data.summary_text;
+        } else {
+          setError(data.message || "An error occurred");
+        }
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      summarizedTextElement.innerText = "Please enter some text to summarize";
+    }
+  } 
+
+  summarizeButton?.addEventListener('click', handleSummarize);
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -43,12 +85,14 @@ const Summarize = () => {
                       <span className="text-sm text-muted-foreground">
                         Words: {wordCount}
                       </span>
-                      <Button size="sm" className="gap-2">
+                      <Button id="trigger-summarize" size="sm" className="gap-2">
                         <Wand2 className="h-4 w-4" />
                         Summarize
                       </Button>
+                      
                       </div>
-                      <Textarea
+                      <Textarea 
+                      id="text-to-summarize"
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       placeholder="Enter your text here..."
@@ -65,8 +109,8 @@ const Summarize = () => {
                         <h3 className="font-medium">Summary</h3>
                       </div>
                       <div className="flex-1 p-4 bg-muted/50">
-                        <p className="text-muted-foreground">
-                          {text ? text : "Your summary will appear here..."}
+                        <p id="summarized-text" className="text-muted-foreground">
+                          Your summarized text will appear here...
                         </p>
                       </div>
                     </div>
