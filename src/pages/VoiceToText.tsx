@@ -11,9 +11,16 @@ const VoiceToText = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
   const { toast } = useToast();
-
+  
   const toggleRecording = () => {
     setIsRecording(!isRecording);
+    
+    if (!isRecording) {
+      console.log("Recording started");
+    } else {
+      console.log("Recording stopped");
+    }
+
     toast({
       title: isRecording ? "Recording stopped" : "Recording started",
       description: isRecording 
@@ -45,6 +52,7 @@ const VoiceToText = () => {
       description: "Your transcription file is being downloaded",
     });
   };
+
 
   return (
     <div className="min-h-screen flex bg-background">
