@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, StopCircle, Copy, Download } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { startAudioRecording, stopAudioRecording } from "@/services/audioRecorder";
 import type { SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types/speech-recognition';
 
 const VoiceToText = () => {
@@ -13,77 +15,25 @@ const VoiceToText = () => {
   const [transcription, setTranscription] = useState("");
   const { toast } = useToast();
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-
-  useEffect(() => {
-    return () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-      }
-    };
-  }, [mediaRecorder]);
+  const { isSupported, createRecognition } = useSpeechRecognition();
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const { recorder, stream } = await startAudioRecording();
       setMediaRecorder(recorder);
+
+      const recognition = createRecognition();
+      if (!recognition) return;
 
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
+        if (e.data.size > 0) chunks.push(e.data);
       };
 
       recorder.onstop = async () => {
         const audioBlob = new Blob(chunks, { type: "audio/webm" });
-        setAudioChunks(chunks);
-        await transcribeAudio(audioBlob);
+        recognition.start();
       };
-
-      recorder.start();
-      console.log("Recording started");
-      setIsRecording(true);
-      
-      toast({
-        title: "Recording started",
-        description: "Speak clearly into your microphone",
-      });
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      toast({
-        title: "Error",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-      console.log("Recording stopped");
-      
-      toast({
-        title: "Recording stopped",
-        description: "Processing your audio...",
-      });
-    }
-  };
-
-  const transcribeAudio = async (audioBlob: Blob) => {
-    try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        throw new Error("Speech recognition is not supported in this browser");
-      }
-      
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
@@ -96,21 +46,37 @@ const VoiceToText = () => {
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error("Recognition error:", event.error);
+        console.error("Error de reconocimiento:", event.error);
         toast({
           title: "Error",
-          description: "Error transcribing audio. Please try again.",
+          description: "No se pudo transcribir el audio. Por favor, inténtalo de nuevo.",
           variant: "destructive",
         });
       };
 
-      recognition.start();
+      recorder.start();
+      setIsRecording(true);
+      toast({
+        title: "Grabación iniciada",
+        description: "Habla claramente al micrófono",
+      });
     } catch (error) {
-      console.error("Transcription error:", error);
+      console.error("Error al iniciar la grabación:", error);
       toast({
         title: "Error",
-        description: "Could not transcribe audio. Please try again.",
+        description: error instanceof Error ? error.message : "Error al iniciar la grabación",
         variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      stopAudioRecording(mediaRecorder, mediaRecorder.stream);
+      setIsRecording(false);
+      toast({
+        title: "Grabación detenida",
+        description: "Procesando el audio...",
       });
     }
   };
@@ -126,8 +92,8 @@ const VoiceToText = () => {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(transcription);
     toast({
-      title: "Copied to clipboard",
-      description: "The transcription has been copied to your clipboard",
+      title: "Copiado",
+      description: "La transcripción se ha copiado al portapapeles",
     });
   };
 
@@ -136,14 +102,14 @@ const VoiceToText = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "transcription.txt";
+    a.download = "transcripcion.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({
-      title: "Download started",
-      description: "Your transcription file is being downloaded",
+      title: "Descarga iniciada",
+      description: "Tu archivo de transcripción se está descargando",
     });
   };
 
@@ -154,7 +120,7 @@ const VoiceToText = () => {
         <Header />
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight">Voice to Text</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Voz a Texto</h1>
           </div>
           <div className="grid gap-6">
             <Card className="p-6">
@@ -165,6 +131,7 @@ const VoiceToText = () => {
                     size="lg"
                     className="relative rounded-full h-16 w-16"
                     onClick={toggleRecording}
+                    disabled={!isSupported}
                   >
                     {isRecording ? (
                       <StopCircle className="h-8 w-8" />
@@ -174,13 +141,13 @@ const VoiceToText = () => {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {isRecording ? "Recording... Click to stop" : "Click to start recording"}
+                  {isRecording ? "Grabando... Haz clic para detener" : "Haz clic para empezar a grabar"}
                 </p>
               </div>
             </Card>
             <Card className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium">Transcription</h2>
+                <h2 className="text-lg font-medium">Transcripción</h2>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -189,7 +156,7 @@ const VoiceToText = () => {
                     disabled={!transcription}
                   >
                     <Copy className="h-4 w-4 mr-2" />
-                    Copy
+                    Copiar
                   </Button>
                   <Button
                     variant="outline"
@@ -198,14 +165,14 @@ const VoiceToText = () => {
                     disabled={!transcription}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Download
+                    Descargar
                   </Button>
                 </div>
               </div>
               <Textarea
                 value={transcription}
                 onChange={(e) => setTranscription(e.target.value)}
-                placeholder="Your transcription will appear here..."
+                placeholder="Tu transcripción aparecerá aquí..."
                 className="min-h-[200px]"
               />
             </Card>
