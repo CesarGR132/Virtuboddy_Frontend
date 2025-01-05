@@ -15,7 +15,6 @@ const VoiceToText = () => {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
 
   useEffect(() => {
-    // Cleanup function to stop recording when component unmounts
     return () => {
       if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.stop();
@@ -76,12 +75,16 @@ const VoiceToText = () => {
 
   const transcribeAudio = async (audioBlob: Blob) => {
     try {
-      // Create a SpeechRecognition instance
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        throw new Error("Speech recognition is not supported in this browser");
+      }
+      
+      const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
         for (let i = 0; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
@@ -91,7 +94,7 @@ const VoiceToText = () => {
         setTranscription(prevTranscription => prevTranscription + finalTranscript);
       };
 
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error("Recognition error:", event.error);
         toast({
           title: "Error",
