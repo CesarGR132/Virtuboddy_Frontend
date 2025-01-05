@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mic, StopCircle, Copy, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import type { SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types/speech-recognition';
 
 const VoiceToText = () => {
   const [isRecording, setIsRecording] = useState(false);
