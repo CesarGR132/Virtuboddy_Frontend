@@ -4,29 +4,119 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, StopCircle, Copy, Download } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const VoiceToText = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
   const { toast } = useToast();
-  
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    
-    if (!isRecording) {
-      console.log("Recording started");
-    } else {
-      console.log("Recording stopped");
-    }
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
 
-    toast({
-      title: isRecording ? "Recording stopped" : "Recording started",
-      description: isRecording 
-        ? "Your voice recording has been stopped" 
-        : "Speak clearly into your microphone",
-    });
+  useEffect(() => {
+    // Cleanup function to stop recording when component unmounts
+    return () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+    };
+  }, [mediaRecorder]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: "audio/webm" });
+        setAudioChunks(chunks);
+        await transcribeAudio(audioBlob);
+      };
+
+      recorder.start();
+      console.log("Recording started");
+      setIsRecording(true);
+      
+      toast({
+        title: "Recording started",
+        description: "Speak clearly into your microphone",
+      });
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      toast({
+        title: "Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+      console.log("Recording stopped");
+      
+      toast({
+        title: "Recording stopped",
+        description: "Processing your audio...",
+      });
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      // Create a SpeechRecognition instance
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          }
+        }
+        setTranscription(prevTranscription => prevTranscription + finalTranscript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Recognition error:", event.error);
+        toast({
+          title: "Error",
+          description: "Error transcribing audio. Please try again.",
+          variant: "destructive",
+        });
+      };
+
+      recognition.start();
+    } catch (error) {
+      console.error("Transcription error:", error);
+      toast({
+        title: "Error",
+        description: "Could not transcribe audio. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleRecording = () => {
+    if (!isRecording) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
   };
 
   const copyToClipboard = () => {
@@ -52,7 +142,6 @@ const VoiceToText = () => {
       description: "Your transcription file is being downloaded",
     });
   };
-
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -114,7 +203,6 @@ const VoiceToText = () => {
                 onChange={(e) => setTranscription(e.target.value)}
                 placeholder="Your transcription will appear here..."
                 className="min-h-[200px]"
-                readOnly
               />
             </Card>
           </div>
