@@ -4,96 +4,78 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, StopCircle, Copy, Download } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
-import { startAudioRecording, stopAudioRecording } from "@/services/audioRecorder";
-import type { SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../types/speech-recognition';
+import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const VoiceToText = () => {
+  const [isBrowserSupported, setIsBrowserSupported] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
   const { toast } = useToast();
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const { isSupported, createRecognition } = useSpeechRecognition();
 
-  const startRecording = async () => {
-    try {
-      const { recorder, stream } = await startAudioRecording();
-      setMediaRecorder(recorder);
-
-      const recognition = createRecognition();
-      if (!recognition) return;
-
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
+  useEffect(() => {
+    const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (recognition) {
+      setIsBrowserSupported(false);
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+    
+      let isListening = false;
+    
+      recognition.onstart = () => {
+        setTranscription('Listening...');
+        isListening = true;
+      };
+    
+      recognition.onend = () => {
+        setTranscription('Stopped listening');
+        isListening = false;
+      };
+    
+      recognition.onresult = (event) => {
+        setTranscription(event.results[0][0].transcript);
+      };
+    
+      recognition.onerror = (event) => {
+        setTranscription('Error: ' + event.error);
       };
 
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: "audio/webm" });
-        recognition.start();
-      };
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let finalTranscript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
-          }
-        }
-        setTranscription(prevTranscription => prevTranscription + finalTranscript);
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error("Error de reconocimiento:", event.error);
-        toast({
-          title: "Error",
-          description: "No se pudo transcribir el audio. Por favor, inténtalo de nuevo.",
-          variant: "destructive",
-        });
-      };
-
-      recorder.start();
-      setIsRecording(true);
+    } else {
+      setIsBrowserSupported(true);
       toast({
-        title: "Grabación iniciada",
-        description: "Habla claramente al micrófono",
-      });
-    } catch (error) {
-      console.error("Error al iniciar la grabación:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al iniciar la grabación",
+        title: "Browser not supported",
+        description: "Your browser does not support the Web Speech API",
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      stopAudioRecording(mediaRecorder, mediaRecorder.stream);
-      setIsRecording(false);
-      toast({
-        title: "Grabación detenida",
-        description: "Procesando el audio...",
-      });
-    }
-  };
-
+  
   const toggleRecording = () => {
+    setIsRecording(!isRecording);
+    
     if (!isRecording) {
-      startRecording();
+      recognition.start();
     } else {
-      stopRecording();
+      recognition.stop();
     }
+
+    toast({
+      title: isRecording ? "Recording stopped" : "Recording started",
+      description: isRecording 
+        ? "Your voice recording has been stopped" 
+        : "Speak clearly into your microphone",
+    });
   };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(transcription);
     toast({
-      title: "Copiado",
-      description: "La transcripción se ha copiado al portapapeles",
+      title: "Copied to clipboard",
+      description: "The transcription has been copied to your clipboard",
     });
   };
 
@@ -102,16 +84,17 @@ const VoiceToText = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "transcripcion.txt";
+    a.download = "transcription.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({
-      title: "Descarga iniciada",
-      description: "Tu archivo de transcripción se está descargando",
+      title: "Download started",
+      description: "Your transcription file is being downloaded",
     });
   };
+
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -120,7 +103,7 @@ const VoiceToText = () => {
         <Header />
         <main className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight">Voz a Texto</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Voice to Text</h1>
           </div>
           <div className="grid gap-6">
             <Card className="p-6">
@@ -131,7 +114,7 @@ const VoiceToText = () => {
                     size="lg"
                     className="relative rounded-full h-16 w-16"
                     onClick={toggleRecording}
-                    disabled={!isSupported}
+                    disabled={isBrowserSupported}
                   >
                     {isRecording ? (
                       <StopCircle className="h-8 w-8" />
@@ -141,13 +124,13 @@ const VoiceToText = () => {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {isRecording ? "Grabando... Haz clic para detener" : "Haz clic para empezar a grabar"}
+                  {isRecording ? "Recording... Click to stop" : "Click to start recording"}
                 </p>
               </div>
             </Card>
             <Card className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium">Transcripción</h2>
+                <h2 className="text-lg font-medium">Transcription</h2>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -156,7 +139,7 @@ const VoiceToText = () => {
                     disabled={!transcription}
                   >
                     <Copy className="h-4 w-4 mr-2" />
-                    Copiar
+                    Copy
                   </Button>
                   <Button
                     variant="outline"
@@ -165,15 +148,16 @@ const VoiceToText = () => {
                     disabled={!transcription}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Descargar
+                    Download
                   </Button>
                 </div>
               </div>
               <Textarea
                 value={transcription}
                 onChange={(e) => setTranscription(e.target.value)}
-                placeholder="Tu transcripción aparecerá aquí..."
+                placeholder="Your transcription will appear here..."
                 className="min-h-[200px]"
+                readOnly
               />
             </Card>
           </div>
