@@ -15,7 +15,6 @@ const VoiceToText = () => {
   const [transcription, setTranscription] = useState("");
   const { toast } = useToast();
   const recordingStatus = document.getElementById('recording-status');
-  // const areaTranscription = document.getElementById('transcription');
   const recordingStatusRef = useRef(null);
   const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -40,6 +39,7 @@ const VoiceToText = () => {
       } else {
         if (recordingStatusRef.current) {
           recordingStatusRef.current.textContent = 'Speech recognition is not supported in your browser';
+          alert('Speech recognition is not supported in your browser');
         }
         toast({
           title: "Browser not supported",
@@ -70,7 +70,6 @@ const VoiceToText = () => {
 
     recognition.onresult = (event) => {
       setTranscription(event.results[0][0].transcript);
-      console.log(event.results[0][0].transcript + " here is the transcription");
     }
 
     recognition.onerror = (event) => {
@@ -79,10 +78,8 @@ const VoiceToText = () => {
 
     if (isRecording) {
       recognition.stop();
-      console.log('started')
     } else {
       recognition.start();
-      console.log('stop')
     }
 
     toast({
