@@ -4,63 +4,85 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, StopCircle, Copy, Download } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { set } from "date-fns";
 
 const VoiceToText = () => {
-  const [isBrowserSupported, setIsBrowserSupported] = useState(true);
+  const [isBrowserSupported, setIsBrowserSupported] = useState(false);
+  const [validator, setValidator] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
   const { toast } = useToast();
+  const recordingStatus = document.getElementById('recording-status');
+  // const areaTranscription = document.getElementById('transcription');
+  const recordingStatusRef = useRef(null);
+  const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  useEffect(() => {
-    const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (recognition) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const isSupported = () => {
+    if (!speechRecognition) {
       setIsBrowserSupported(false);
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-    
-      let isListening = false;
-    
-      recognition.onstart = () => {
-        setTranscription('Listening...');
-        isListening = true;
-      };
-    
-      recognition.onend = () => {
-        setTranscription('Stopped listening');
-        isListening = false;
-      };
-    
-      recognition.onresult = (event) => {
-        setTranscription(event.results[0][0].transcript);
-      };
-    
-      recognition.onerror = (event) => {
-        setTranscription('Error: ' + event.error);
-      };
-
+      recordingStatusRef.current.textContent = 'Speech recognition is not supported in your browser';
+      return false;
     } else {
       setIsBrowserSupported(true);
-      toast({
-        title: "Browser not supported",
-        description: "Your browser does not support the Web Speech API",
-        variant: "destructive",
-      });
+      return true;
     }
-  }, [toast]);
+  }
+
+  useEffect(() => {
+    const initialize = () => {
+      if (isSupported()) {
+        if (recordingStatusRef.current) {
+          recordingStatusRef.current.textContent = 'Click to start recording';
+        }
+      } else {
+        if (recordingStatusRef.current) {
+          recordingStatusRef.current.textContent = 'Speech recognition is not supported in your browser';
+        }
+        toast({
+          title: "Browser not supported",
+          description: "Speech recognition is not supported in your browser",
+        });
+      }
+    };
+
+    // Call the initialize function
+    initialize();
+  }, [isSupported, toast]);
 
   
+
   const toggleRecording = () => {
-    setIsRecording(!isRecording);
+    const recognition = new speechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
     
-    if (!isRecording) {
-      recognition.start();
-    } else {
+    recognition.onstart = () => {
+      setIsRecording(true);
+    }
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    }
+
+    recognition.onresult = (event) => {
+      setTranscription(event.results[0][0].transcript);
+      console.log(event.results[0][0].transcript + " here is the transcription");
+    }
+
+    recognition.onerror = (event) => {
+      console.log(event.error);
+    }
+
+    if (isRecording) {
       recognition.stop();
+      console.log('started')
+    } else {
+      recognition.start();
+      console.log('stop')
     }
 
     toast({
@@ -95,6 +117,7 @@ const VoiceToText = () => {
     });
   };
 
+  
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -110,20 +133,23 @@ const VoiceToText = () => {
               <div className="flex flex-col items-center justify-center gap-6">
                 <div className="relative">
                   <div className={`absolute -inset-1 rounded-full ${isRecording ? 'animate-pulse bg-red-500/20' : ''}`} />
-                  <Button
+                    <Button
+                    id="record-button"
                     size="lg"
                     className="relative rounded-full h-16 w-16"
                     onClick={toggleRecording}
-                    disabled={isBrowserSupported}
-                  >
+                    disabled={!isBrowserSupported}
+                    >
                     {isRecording ? (
                       <StopCircle className="h-8 w-8" />
                     ) : (
                       <Mic className="h-8 w-8" />
                     )}
-                  </Button>
+                    </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p 
+                id = "recording-status"
+                className="text-sm text-muted-foreground">
                   {isRecording ? "Recording... Click to stop" : "Click to start recording"}
                 </p>
               </div>
@@ -168,3 +194,7 @@ const VoiceToText = () => {
 };
 
 export default VoiceToText;
+
+function initialize() {
+  throw new Error("Function not implemented.");
+}
