@@ -1,6 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 
+// Extend Window interface to include SpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
+
 export const useSpeechRecognition = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
@@ -42,8 +50,8 @@ export const useSpeechRecognition = () => {
       console.log('Transcription:', transcript);
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
+    recognition.onerror = (event: Event) => {
+      console.error('Speech recognition error:', event);
       toast({
         title: "Error",
         description: "An error occurred during recording. Please try again.",
