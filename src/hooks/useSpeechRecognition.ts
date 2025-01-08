@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 
 // Extend Window interface to include SpeechRecognition
@@ -12,22 +12,23 @@ declare global {
 export const useSpeechRecognition = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
+  const [isBrowserSupported, setIsBrowserSupported] = useState(true);
   const { toast } = useToast();
   
-  const checkBrowserSupport = useCallback(() => {
+  useEffect(() => {
     const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!speechRecognition) {
+      setIsBrowserSupported(false);
       toast({
         title: "Browser not supported",
         description: "Speech recognition is not supported in your browser",
+        variant: "destructive"
       });
-      return false;
     }
-    return true;
   }, [toast]);
 
   const startRecording = useCallback(() => {
-    if (!checkBrowserSupport()) return;
+    if (!isBrowserSupported) return;
 
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'en-US';
@@ -60,7 +61,7 @@ export const useSpeechRecognition = () => {
     };
 
     recognition.start();
-  }, [checkBrowserSupport, toast]);
+  }, [isBrowserSupported, toast]);
 
   const stopRecording = useCallback(() => {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -73,6 +74,6 @@ export const useSpeechRecognition = () => {
     transcription,
     startRecording,
     stopRecording,
-    isBrowserSupported: checkBrowserSupport(),
+    isBrowserSupported,
   };
 };
