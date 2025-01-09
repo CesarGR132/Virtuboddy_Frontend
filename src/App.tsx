@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Calendar from "./pages/Calendar";
 import Summarize from "./pages/Summarize";
 import VoiceToText from "./pages/VoiceToText";
+import Email from "./pages/Email";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/summarize" element={<Summarize />} />
             <Route path="/voice" element={<VoiceToText />} />
+            <Route path="/email" element={<Email />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
