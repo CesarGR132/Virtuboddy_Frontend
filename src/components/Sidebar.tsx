@@ -1,4 +1,4 @@
-import { Home, Calendar, FileText, Mic, LogOut, Menu } from "lucide-react";
+import { Home, Calendar, FileText, Mic, Mail, LogOut, Menu } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ export function Sidebar({ className }: SidebarProps) {
     { icon: Calendar, label: "Calendar", href: "/calendar" },
     { icon: FileText, label: "Summarize", href: "/summarize" },
     { icon: Mic, label: "Voice to Text", href: "/voice" },
+    { icon: Mail, label: "Email", href: "/email" },
   ];
 
   const handleLogout = () => {
