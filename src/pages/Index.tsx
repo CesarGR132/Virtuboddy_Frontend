@@ -28,14 +28,37 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Clock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
+  color: z.string(),
+  dueDate: z.date(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
+
+const colorOptions = [
+  { value: "purple", label: "Purple", class: "bg-[#9b87f5]" },
+  { value: "blue", label: "Blue", class: "bg-[#33C3F0]" },
+  { value: "green", label: "Green", class: "bg-[#F2FCE2]" },
+  { value: "orange", label: "Orange", class: "bg-[#FEC6A1]" },
+  { value: "pink", label: "Pink", class: "bg-[#FFDEE2]" },
+];
 
 const Index = () => {
   const [open, setOpen] = useState(false);
@@ -47,6 +70,8 @@ const Index = () => {
     defaultValues: {
       title: "",
       description: "",
+      color: "purple",
+      dueDate: new Date(),
     },
   });
 
@@ -75,7 +100,7 @@ const Index = () => {
                   + Add new task
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Create New Task</DialogTitle>
                 </DialogHeader>
@@ -107,6 +132,76 @@ const Index = () => {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="color"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Color</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a color" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {colorOptions.map((color) => (
+                                <SelectItem
+                                  key={color.value}
+                                  value={color.value}
+                                  className="flex items-center gap-2"
+                                >
+                                  <div className={`w-4 h-4 rounded-full ${color.class}`} />
+                                  {color.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="dueDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Due Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date < new Date(new Date().setHours(0, 0, 0, 0))
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button type="submit" className="w-full">
                       Create Task
                     </Button>
@@ -123,13 +218,32 @@ const Index = () => {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {tasks.map((task, index) => (
-                <Card key={index}>
+                <Card 
+                  key={index}
+                  className={cn(
+                    "transform hover:scale-105 transition-all duration-200",
+                    "border-l-4",
+                    {
+                      "border-l-[#9b87f5]": task.color === "purple",
+                      "border-l-[#33C3F0]": task.color === "blue",
+                      "border-l-[#F2FCE2]": task.color === "green",
+                      "border-l-[#FEC6A1]": task.color === "orange",
+                      "border-l-[#FFDEE2]": task.color === "pink",
+                    }
+                  )}
+                >
                   <CardHeader>
                     <CardTitle>{task.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription>{task.description}</CardDescription>
                   </CardContent>
+                  <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{format(task.dueDate, "PPP")}</span>
+                    </div>
+                  </CardFooter>
                 </Card>
               ))}
             </div>
