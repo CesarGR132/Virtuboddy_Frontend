@@ -10,7 +10,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -23,6 +22,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -33,6 +39,7 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 
 const Index = () => {
   const [open, setOpen] = useState(false);
+  const [tasks, setTasks] = useState<TaskFormValues[]>([]);
   const { toast } = useToast();
 
   const form = useForm<TaskFormValues>({
@@ -45,6 +52,7 @@ const Index = () => {
 
   const onSubmit = (data: TaskFormValues) => {
     console.log("New task:", data);
+    setTasks((prevTasks) => [...prevTasks, data]);
     toast({
       title: "Task Created",
       description: "Your new task has been created successfully!",
@@ -107,9 +115,25 @@ const Index = () => {
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-muted-foreground">
-            Select an option from the sidebar to get started.
-          </p>
+          
+          {tasks.length === 0 ? (
+            <p className="text-muted-foreground">
+              Select an option from the sidebar to get started or create a new task.
+            </p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {tasks.map((task, index) => (
+                <Card key={index}>
+                  <CardHeader>
+                    <CardTitle>{task.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>{task.description}</CardDescription>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </div>
