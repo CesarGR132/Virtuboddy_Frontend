@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -60,10 +60,30 @@ const colorOptions = [
   { value: "pink", label: "Pink", class: "bg-[#FFDEE2]" },
 ];
 
+const STORAGE_KEY = "dashboard_tasks";
+
 const Index = () => {
   const [open, setOpen] = useState(false);
-  const [tasks, setTasks] = useState<TaskFormValues[]>([]);
+  const [tasks, setTasks] = useState<TaskFormValues[]>(() => {
+    // Initialize tasks from localStorage
+    const savedTasks = localStorage.getItem(STORAGE_KEY);
+    if (savedTasks) {
+      const parsedTasks = JSON.parse(savedTasks);
+      // Convert ISO date strings back to Date objects
+      return parsedTasks.map((task: any) => ({
+        ...task,
+        dueDate: new Date(task.dueDate),
+      }));
+    }
+    return [];
+  });
   const { toast } = useToast();
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    console.log("Tasks saved to localStorage:", tasks);
+  }, [tasks]);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -252,6 +272,7 @@ const Index = () => {
       </div>
     </div>
   );
+
 };
 
 export default Index;
