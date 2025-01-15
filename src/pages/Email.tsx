@@ -31,13 +31,11 @@ const Email = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Form values:", values);
+  const onSubmit = () => {
     toast({
-      title: "Email Sent",
-      description: "Your email has been sent successfully!",
+      title: "Form Validated",
+      description: "This is just a demo form with validations.",
     });
-    form.reset();
   };
 
   return (
@@ -47,7 +45,7 @@ const Email = () => {
         <Header />
         <main className="flex-1 p-6">
           <div className="max-w-2xl mx-auto">
-            <h1 className="text-2xl font-semibold tracking-tight mb-6">Send Email</h1>
+            <h1 className="text-2xl font-semibold tracking-tight mb-6">Email Form Demo</h1>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -146,7 +144,7 @@ const Email = () => {
                 />
 
                 <Button type="submit" className="w-full">
-                  Send Email
+                  Submit Form
                 </Button>
               </form>
             </Form>
