@@ -31,10 +31,24 @@ const Email = () => {
     },
   });
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
+    const emailValues = form.getValues();
+    const recipients = emailValues.to + (emailValues.cc ? `, ${emailValues.cc}` : "") + (emailValues.bcc ? `, ${emailValues.bcc}` : "");
+    const emailRequest = await fetch("http://localhost:3000/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: emailValues.message,
+        recipient: recipients,
+        subject: emailValues.subject,
+      }),
+    })
+
     toast({
       title: "Form Validated",
-      description: "This is just a demo form with validations.",
+      description: emailRequest.ok ? "Email sent successfully" : "An error occurred",
     });
   };
 
@@ -143,7 +157,7 @@ const Email = () => {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
+                <Button id="send-email" type="submit" className="w-full" >
                   Submit Form
                 </Button>
               </form>
