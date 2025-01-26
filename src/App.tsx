@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./providers/ThemeProvider";
+import { ChatBot } from "./components/ChatBot";
 import Index from "./pages/Index";
 import Calendar from "./pages/Calendar";
 import Summarize from "./pages/Summarize";
@@ -18,6 +19,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <ChatBot />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
