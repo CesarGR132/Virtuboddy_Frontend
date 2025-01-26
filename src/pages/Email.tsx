@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -37,33 +37,26 @@ const Email = () => {
     },
   });
 
-  const handleCopyMessage = () => {
+  const handleCopyMessage = useCallback(() => {
     const message = form.getValues("message");
     navigator.clipboard.writeText(message);
     toast({
       title: "Copied!",
       description: "Message copied to clipboard",
     });
-  };
+  }, [form, toast]);
 
-  const handleVoiceToText = async () => {
+  const handleVoiceToText = useCallback(async () => {
     if (isRecording) {
       stopRecording();
     } else {
       await startRecording();
     }
-  };
+  }, [isRecording, startRecording, stopRecording]);
 
-  const onSubmit = async () => {
-    const emailValues = form.getValues();
-    const recipients = emailValues.to + (emailValues.cc ? `, ${emailValues.cc}` : "") + (emailValues.bcc ? `, ${emailValues.bcc}` : "");
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    const recipients = data.to + (data.cc ? `, ${data.cc}` : "") + (data.bcc ? `, ${data.bcc}` : "");
     
-    console.log("Sending email:", {
-      text: emailValues.message,
-      recipient: recipients,
-      subject: emailValues.subject,
-    });
-
     try {
       const emailRequest = await fetch("http://localhost:3000/send-email", {
         method: "POST",
@@ -71,9 +64,9 @@ const Email = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: emailValues.message,
+          text: data.message,
           recipient: recipients,
-          subject: emailValues.subject,
+          subject: data.subject,
         }),
       });
 
@@ -92,11 +85,10 @@ const Email = () => {
     }
   };
 
-  // Update message when transcription changes using useEffect
   useEffect(() => {
     if (transcription) {
       const currentMessage = form.getValues("message");
-      form.setValue("message", currentMessage + " " + transcription);
+      form.setValue("message", `${currentMessage} ${transcription}`.trim());
     }
   }, [transcription, form]);
 
