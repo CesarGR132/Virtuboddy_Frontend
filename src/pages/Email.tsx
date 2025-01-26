@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -56,7 +56,7 @@ const Email = () => {
     }
   }, [isRecording, startRecording, stopRecording]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (transcription) {
       const currentMessage = form.getValues("message");
       form.setValue("message", `${currentMessage} ${transcription}`.trim());
