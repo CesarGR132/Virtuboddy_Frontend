@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { Copy, Mic, MicOff } from "lucide-react";
@@ -64,29 +64,39 @@ const Email = () => {
       subject: emailValues.subject,
     });
 
-    const emailRequest = await fetch("http://localhost:3000/send-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: emailValues.message,
-        recipient: recipients,
-        subject: emailValues.subject,
-      }),
-    });
+    try {
+      const emailRequest = await fetch("http://localhost:3000/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: emailValues.message,
+          recipient: recipients,
+          subject: emailValues.subject,
+        }),
+      });
 
-    toast({
-      title: emailRequest.ok ? "Success" : "Error",
-      description: emailRequest.ok ? "Email sent successfully" : "Failed to send email",
-      variant: emailRequest.ok ? "default" : "destructive",
-    });
+      toast({
+        title: emailRequest.ok ? "Success" : "Error",
+        description: emailRequest.ok ? "Email sent successfully" : "Failed to send email",
+        variant: emailRequest.ok ? "default" : "destructive",
+      });
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send email",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Update message when transcription changes
-  React.useEffect(() => {
+  // Update message when transcription changes using useEffect
+  useEffect(() => {
     if (transcription) {
-      form.setValue("message", form.getValues("message") + " " + transcription);
+      const currentMessage = form.getValues("message");
+      form.setValue("message", currentMessage + " " + transcription);
     }
   }, [transcription, form]);
 
