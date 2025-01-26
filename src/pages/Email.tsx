@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -37,25 +37,34 @@ const Email = () => {
     },
   });
 
-  const handleCopyMessage = useCallback(() => {
+  const handleCopyMessage = () => {
     const message = form.getValues("message");
-    navigator.clipboard.writeText(message);
-    toast({
-      title: "Copied!",
-      description: "Message copied to clipboard",
-    });
-  }, [form, toast]);
+    if (message) {
+      navigator.clipboard.writeText(message);
+      toast({
+        title: "Copied!",
+        description: "Message copied to clipboard",
+      });
+    }
+  };
 
-  const handleVoiceToText = useCallback(async () => {
+  const handleVoiceToText = () => {
     if (isRecording) {
       stopRecording();
     } else {
-      await startRecording();
+      startRecording();
     }
-  }, [isRecording, startRecording, stopRecording]);
+  };
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    const recipients = data.to + (data.cc ? `, ${data.cc}` : "") + (data.bcc ? `, ${data.bcc}` : "");
+  React.useEffect(() => {
+    if (transcription) {
+      const currentMessage = form.getValues("message");
+      form.setValue("message", `${currentMessage} ${transcription}`.trim());
+    }
+  }, [transcription, form]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const recipients = values.to + (values.cc ? `, ${values.cc}` : "") + (values.bcc ? `, ${values.bcc}` : "");
     
     try {
       const emailRequest = await fetch("http://localhost:3000/send-email", {
@@ -64,9 +73,9 @@ const Email = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: data.message,
+          text: values.message,
           recipient: recipients,
-          subject: data.subject,
+          subject: values.subject,
         }),
       });
 
@@ -84,13 +93,6 @@ const Email = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (transcription) {
-      const currentMessage = form.getValues("message");
-      form.setValue("message", `${currentMessage} ${transcription}`.trim());
-    }
-  }, [transcription, form]);
 
   return (
     <div className="min-h-screen flex bg-background">
