@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -37,7 +37,7 @@ const Email = () => {
     },
   });
 
-  const handleCopyMessage = () => {
+  const handleCopyMessage = useCallback(() => {
     const message = form.getValues("message");
     if (message) {
       navigator.clipboard.writeText(message);
@@ -46,15 +46,15 @@ const Email = () => {
         description: "Message copied to clipboard",
       });
     }
-  };
+  }, [form, toast]);
 
-  const handleVoiceToText = () => {
+  const handleVoiceToText = useCallback(() => {
     if (isRecording) {
       stopRecording();
     } else {
       startRecording();
     }
-  };
+  }, [isRecording, startRecording, stopRecording]);
 
   React.useEffect(() => {
     if (transcription) {
@@ -63,7 +63,7 @@ const Email = () => {
     }
   }, [transcription, form]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     const recipients = values.to + (values.cc ? `, ${values.cc}` : "") + (values.bcc ? `, ${values.bcc}` : "");
     
     try {
@@ -92,7 +92,7 @@ const Email = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   return (
     <div className="min-h-screen flex bg-background">
