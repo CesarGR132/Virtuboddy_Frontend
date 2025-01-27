@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { error } from "console";
 
 export function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,21 +12,51 @@ export function ChatBot() {
   ]);
   const [input, setInput] = useState("");
 
+  const getMessage = async (text: string) => {
+    try {
+      const response = await fetch('http://localhost:3000/chat-bot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text
+        }),
+      });
+  
+      const contentType = response.headers.get('Content-Type');
+  
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+  
+        if (response.ok) {
+          return data.message;
+        } else {
+          return { message: data.message || 'An error occurred' };
+        }
+      } else {
+        const text = await response.text();
+        return { message: text || 'An error occurred' };
+      }
+    } catch (error) {
+      console.error(error);
+      return { message: 'An error occurred' };
+    }
+  };
+
   const handleSend = () => {
     if (!input.trim()) return;
-    
-    // Add user message
-    setMessages((prev) => [...prev, { text: input, isUser: true }]);
-    
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { text: "I'm a demo chatbot. I can't actually process messages yet!", isUser: false },
-      ]);
-    }, 1000);
-    
-    setInput("");
+
+  // Add user message
+  setMessages((prev) => [...prev, { text: input, isUser: true }]);
+
+  // Clear input
+  setInput('');
+
+  // Fetch bot response
+  getMessage(input).then((response) => {
+    setMessages((prev) => [...prev, { text: response.message, isUser: false }]);
+  });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
